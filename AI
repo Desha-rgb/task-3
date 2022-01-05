@@ -1,0 +1,76 @@
+pip install pycaret
+pip install missingno
+
+def get_clf_eval(y_test, pred=None, pred_proba=None):
+    confusion = confusion_matrix( y_test, pred)
+    accuracy = accuracy_score(y_test , pred)
+    precision = precision_score(y_test , pred)
+    recall = recall_score(y_test , pred)
+    f1 = f1_score(y_test,pred)   
+     
+    roc_auc = roc_auc_score(y_test, pred_proba)
+​
+    # ROC-AUC print 
+    print('accuracy: {0:.4f}, precision: {1:.4f}, recall: {2:.4f},\
+    F1: {3:.4f}, AUC:{4:.4f}'.format(accuracy, precision, recall, f1, roc_auc))
+    return confusion
+​
+
+
+diabetes_df = pd.read_csv("../input/pima-indians-diabetes-database/diabetes.csv")
+diabetes_df.head().T.style.set_properties(**{'background-color': 'grey',
+                           'color': 'white',
+                           'border-color': 'white'})
+
+
+
+diabetes_df.rename(columns ={"DiabetesPedigreeFunction":"DPF"},inplace=True)
+
+import missingno as msno
+msno.matrix(diabetes_df)
+
+colors = ['gold', 'mediumturquoise']
+
+
+
+fig = go.Figure(data=[go.Pie(labels=labels, values=values, hole=.3)])
+fig.update_traces(hoverinfo='label+percent', textinfo='percent', textfont_size=20,
+                  marker=dict(colors=colors, line=dict(color='#000000', width=2)))
+fig.update_layout(
+    title_text="Outcome")
+fig.show()
+
+def highlight_min(s, props=''):
+    return np.where(s == np.nanmin(s.values), props, '')
+
+diabetes_df.describe().style.apply(highlight_min, props='color:Black;background-color:Grey', axis=0)
+
+feature_names = [cname for cname in diabetes_df.loc[:,:'Age'].columns]
+
+
+rcParams['figure.figsize'] = 40,60
+sns.set(font_scale = 3)
+sns.set_style("white")
+sns.set_palette("bright")
+plt.subplots_adjust(hspace=0.5)
+i = 1;
+for name in feature_names:
+    plt.subplot(5,2,i)
+    sns.histplot(data=diabetes_df, x=name, hue="Outcome",kde=True,palette="YlGnBu")
+    i = i + 1
+
+
+zero_features = ['Pregnancies','Glucose','BloodPressure','SkinThickness',"Insulin",'BMI']
+total_count = diabetes_df['Glucose'].count()
+
+for feature in zero_features:
+    zero_count = diabetes_df[diabetes_df[feature]==0][feature].count()
+    print('{0} 0 number of cases {1}, percent is {2:.2f} %'.format(feature, zero_count, 100*zero_count/total_count))
+
+
+diabetes_mean = diabetes_df[zero_features].mean()
+diabetes_df[zero_features]=diabetes_df[zero_features].replace(0, diabetes_mean)
+
+
+X = diabetes_df.iloc[:,:-1]
+y = diabetes_df.iloc[:,-1]
